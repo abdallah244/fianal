@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WhatsApp Webhook Dashboard</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <div class="title">لوحة رسائل واتساب</div>
+        <div class="sub">تحديث تلقائي (Polling) + MongoDB</div>
+      </div>
+      <div class="status" id="status">
+        <span class="dot" id="statusDot"></span>
+        <span id="statusText">غير متصل</span>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="panel">
+        <h2>إعدادات</h2>
+        <div class="row">
+          <label for="adminToken">Admin Token</label>
+          <input
+            id="adminToken"
+            type="password"
+            placeholder="اكتب ADMIN_TOKEN"
+          />
+          <button id="saveToken">حفظ</button>
+        </div>
+        <div class="row">
+          <button id="reload">تحديث القوائم</button>
+          <a class="link" href="/api/health" target="_blank" rel="noreferrer"
+            >Health</a
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>رد جماعي</h2>
+        <div class="row">
+          <textarea
+            id="replyText"
+            placeholder="اكتب الرسالة اللي هتتبعت مرة واحدة للمختارين"
+          ></textarea>
+        </div>
+        <div class="row">
+          <button class="primary" id="sendReply">إرسال للمختارين</button>
+          <button id="selectAll">تحديد الكل (الوارد)</button>
+          <button id="clearSelection">إلغاء التحديد</button>
+          <div class="muted" id="selectedCount">0 محدد</div>
+        </div>
+      </section>
+
+      <section class="grid">
+        <div class="col">
+          <div class="colHead">
+            <h2>الوارد</h2>
+            <span class="badge" id="inboxCount">0</span>
+          </div>
+          <div id="inbox" class="list"></div>
+        </div>
+        <div class="col">
+          <div class="colHead">
+            <h2>تم الرد</h2>
+            <span class="badge" id="repliedCount">0</span>
+          </div>
+          <div id="replied" class="list"></div>
+        </div>
+      </section>
+    </main>
+
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <div>Loading...</div>
+    </div>
+
+    <div class="toasts" id="toasts"></div>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
