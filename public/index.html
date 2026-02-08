@@ -10,7 +10,7 @@
     <header class="topbar">
       <div class="brand">
         <div class="title">لوحة رسائل واتساب</div>
-        <div class="sub">Realtime عبر Socket.IO + MongoDB</div>
+        <div class="sub">تحديث تلقائي (Polling) + MongoDB</div>
       </div>
       <div class="status" id="status">
         <span class="dot" id="statusDot"></span>
@@ -72,14 +72,13 @@
       </section>
     </main>
 
-    <div class="loading" id="loading" hidden>
+    <div class="loading" id="loading">
       <div class="spinner"></div>
       <div>Loading...</div>
     </div>
 
     <div class="toasts" id="toasts"></div>
 
-    <script src="/socket.io/socket.io.js"></script>
     <script src="/app.js"></script>
   </body>
 </html>

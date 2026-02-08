@@ -59,12 +59,31 @@ Then set Meta webhook callback URL to:
 
 - `https://<your-public-url>/webhook`
 
-## Deployment note
+## Deploy on Vercel (recommended for your current setup)
 
-Socket.IO needs a long-running server, so hosting the whole app on Vercel Serverless is not a good fit.
-Use Render / Railway / Fly.io for the Express + Socket.IO server.
+This repo is now Vercel-ready:
 
-## Vercel-only alternative (no realtime)
+- Dashboard is static and uses polling (no Socket.IO).
+- Backend is Vercel Serverless Functions in `api/`.
 
-This repo also contains `api/webhook.js` and `api/send.js` which are Vercel Serverless handlers.
-They can be deployed to Vercel, but they won’t support Socket.IO realtime dashboard.
+### Steps
+
+1. Import the repo into Vercel.
+2. Set Environment Variables in Vercel Project Settings:
+   - `ADMIN_TOKEN`
+   - `MONGODB_URI`
+   - `WHATSAPP_VERIFY_TOKEN`
+   - `WHATSAPP_TOKEN`
+   - `WHATSAPP_PHONE_NUMBER_ID`
+   - (optional) `META_APP_SECRET`
+3. Deploy.
+
+### URLs
+
+- Dashboard: `https://<your-domain>/`
+- Webhook callback: `https://<your-domain>/api/webhook`
+
+### Notes
+
+- Webhook stores incoming messages in MongoDB.
+- Replies are sent from the dashboard using `POST /api/reply`.

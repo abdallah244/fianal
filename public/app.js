@@ -21,6 +21,7 @@ const state = {
   selected: new Set(),
   socket: null,
   loadingTimer: null,
+  pollTimer: null,
 };
 
 function setLoading(isLoading) {
@@ -221,6 +222,9 @@ async function apiDelete(url) {
 async function loadLists() {
   setLoading(true);
   try {
+    if (!state.token) {
+      toast("مطلوب Admin Token", "اكتب ADMIN_TOKEN واضغط حفظ", "bad");
+    }
     const [inbox, replied] = await Promise.all([
       apiGet("/api/messages?status=new"),
       apiGet("/api/messages?status=replied"),
@@ -244,6 +248,7 @@ async function loadLists() {
 async function checkHealth() {
   try {
     const health = await apiGet("/api/health");
+    setStatus(true);
     if (health.wantMongo && health.mode === "memory") {
       toast(
         "MongoDB مش متصل",
@@ -252,40 +257,18 @@ async function checkHealth() {
       );
     }
   } catch (e) {
+    setStatus(false);
     toast("Health check فشل", e.message, "bad");
   }
 }
 
-function connectSocket() {
-  if (state.socket) {
-    try {
-      state.socket.disconnect();
-    } catch {}
-  }
-
-  state.socket = io({
-    transports: ["websocket", "polling"],
-  });
-
-  state.socket.on("connect", () => setStatus(true));
-  state.socket.on("disconnect", () => setStatus(false));
-  state.socket.on("connect_error", (err) => {
-    setStatus(false);
-    toast("Socket خطأ", err.message || "connect_error", "bad");
-  });
-
-  state.socket.on("message:new", (msg) => {
-    upsertMessage(msg);
-    toast("رسالة جديدة", `${msg.from}`, "good");
-  });
-
-  state.socket.on("message:updated", (msg) => {
-    upsertMessage(msg);
-  });
-
-  state.socket.on("message:deleted", ({ id }) => {
-    deleteMessage(id);
-  });
+function startPolling() {
+  if (state.pollTimer) clearInterval(state.pollTimer);
+  // refresh every 5 seconds
+  state.pollTimer = setInterval(() => {
+    loadLists();
+    checkHealth();
+  }, 5000);
 }
 
 function bindUi() {
@@ -299,7 +282,8 @@ function bindUi() {
       state.token ? "هيحمي عمليات الإرسال/الحذف" : "بدون توكن",
       "good",
     );
-    connectSocket();
+    loadLists();
+    checkHealth();
   });
 
   $("reload").addEventListener("click", loadLists);
@@ -368,6 +352,6 @@ function bindUi() {
 }
 
 bindUi();
-connectSocket();
 checkHealth();
 loadLists();
+startPolling();

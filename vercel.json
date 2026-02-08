@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "routes": [
+    { "src": "/$", "dest": "/public/index.html" },
+    { "src": "/app.js$", "dest": "/public/app.js" },
+    { "src": "/styles.css$", "dest": "/public/styles.css" },
+    { "src": "/api/(.*)", "dest": "/api/$1" },
+    { "handle": "filesystem" },
+    { "src": "/(.*)", "dest": "/public/index.html" }
+  ]
+}

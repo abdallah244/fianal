@@ -1,4 +1,6 @@
 const crypto = require("crypto");
+const connectMongo = require("../lib/mongo");
+const Message = require("../lib/Message");
 
 function getEnv(name, { required = true } = {}) {
   const value = process.env[name];
@@ -34,44 +36,7 @@ function verifyMetaSignature({ rawBody, signatureHeader, appSecret }) {
   return safeEqual(expected, signatureHeader);
 }
 
-async function sendWhatsAppText({ to, text, replyToMessageId }) {
-  const token = getEnv("WHATSAPP_TOKEN");
-  const phoneNumberId = getEnv("WHATSAPP_PHONE_NUMBER_ID");
-
-  const payload = {
-    messaging_product: "whatsapp",
-    to,
-    type: "text",
-    text: { body: text },
-  };
-
-  if (replyToMessageId) {
-    payload.context = { message_id: replyToMessageId };
-  }
-
-  const resp = await fetch(
-    `https://graph.facebook.com/v20.0/${phoneNumberId}/messages`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    },
-  );
-
-  const data = await resp.json().catch(() => ({}));
-  if (!resp.ok) {
-    const msg = data?.error?.message || `WhatsApp API error (${resp.status})`;
-    const details = data?.error
-      ? JSON.stringify(data.error)
-      : JSON.stringify(data);
-    throw new Error(`${msg}: ${details}`);
-  }
-
-  return data;
-}
+// NOTE: We do NOT auto-reply here. Replies are sent from the dashboard via /api/reply.
 
 module.exports = async (req, res) => {
   try {
@@ -107,7 +72,9 @@ module.exports = async (req, res) => {
 
     const body = rawBody ? JSON.parse(rawBody) : {};
 
-    // Process webhook payload (may contain multiple entries/changes/messages)
+    await connectMongo();
+
+    // Store webhook payload (may contain multiple entries/changes/messages)
     const entries = Array.isArray(body?.entry) ? body.entry : [];
     for (const entry of entries) {
       const changes = Array.isArray(entry?.changes) ? entry.changes : [];
@@ -118,16 +85,27 @@ module.exports = async (req, res) => {
           const from = message?.from;
           if (!from) continue;
 
-          const textBody = message?.text?.body;
-          const replyText = textBody
-            ? `تم الاستلام: ${textBody}`
-            : "تم الاستلام.";
+          const textBody = message?.text?.body || "";
+          const ts = message?.timestamp
+            ? new Date(Number(message.timestamp) * 1000)
+            : new Date();
+          const waMessageId = message?.id;
 
-          await sendWhatsAppText({
-            to: from,
-            text: replyText,
-            replyToMessageId: message?.id,
-          });
+          const doc = {
+            waMessageId,
+            from,
+            text: textBody,
+            timestamp: ts,
+            status: "new",
+            raw: message,
+          };
+
+          const key = waMessageId || `${from}:${ts.toISOString()}:${textBody}`;
+          await Message.findOneAndUpdate(
+            { waMessageId: key },
+            { $setOnInsert: doc },
+            { new: true, upsert: true },
+          );
         }
       }
     }
